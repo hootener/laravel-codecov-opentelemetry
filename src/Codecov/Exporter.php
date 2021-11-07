@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Codecov\LaravelCodecovOpenTelemetry\Codecov;
 
+use GuzzleHttp\Client;
 use GuzzleHttp\Psr7\Request;
-use Http\Adapter\Guzzle7\Client;
 use InvalidArgumentException;
 use OpenTelemetry\Sdk\Trace;
 use OpenTelemetry\Trace as API;
@@ -60,14 +60,13 @@ class Exporter implements Trace\Exporter
         if (
             !isset($parsedDsn['scheme'])
             || !isset($parsedDsn['host'])
-            || !isset($parsedDsn['port'])
             || !isset($parsedDsn['path'])
         ) {
-            throw new InvalidArgumentException('Endpoint should have scheme, host, port and path');
+            throw new InvalidArgumentException('Endpoint should have scheme, host, and path');
         }
 
         $this->endpointUrl = $endpointUrl;
-        $this->client = $client ?? $this->createDefaultClient();
+        $this->client = $client ?? new Client(['timeout' => 30]);
         $this->spanConverter = $spanConverter ?? new SpanConverter($name);
         $this->authToken = $authToken;
     }
@@ -122,12 +121,5 @@ class Exporter implements Trace\Exporter
     public function shutdown(): void
     {
         $this->running = false;
-    }
-
-    protected function createDefaultClient(): ClientInterface
-    {
-        return Client::createWithConfig([
-            'timeout' => 30,
-        ]);
     }
 }
